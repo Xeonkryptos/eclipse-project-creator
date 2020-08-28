@@ -1,19 +1,19 @@
 <idea-plugin>
     <id>com.github.xeonkryptos.eclipseprojectcreator</id>
-    <name>eclipse-project-creator</name>
-    <vendor>xeonkryptos</vendor>
+    <name>Eclipse Project Creator</name>
+    <vendor>Xeonkryptos (XeonAppDev@gmail.com)</vendor>
 
     <!-- Product and plugin compatibility requirements -->
     <!-- https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.java</depends>
+    <depends>org.jetbrains.idea.eclipse</depends>
+
+    <depends optional="true" config-file="withIvyIDEA.xml">IvyIDEA</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="com.github.xeonkryptos.eclipseprojectcreator.services.MyApplicationService"/>
-        <projectService serviceImplementation="com.github.xeonkryptos.eclipseprojectcreator.services.MyProjectService"/>
+        <framework.type implementation="com.github.xeonkryptos.eclipseprojectcreator.framework.EclipseFrameworkType"/>
+        <fileType.fileViewProviderFactory filetype="Eclipse"
+                                          implementationClass="com.github.xeonkryptos.eclipseprojectcreator.psi.EclipseFileViewProviderFactory"/>
     </extensions>
-
-    <projectListeners>
-        <listener class="com.github.xeonkryptos.eclipseprojectcreator.listeners.MyProjectManagerListener"
-                  topic="com.intellij.openapi.project.ProjectManagerListener"/>
-    </projectListeners>
 </idea-plugin>

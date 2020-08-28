@@ -1,0 +1,8 @@
+<idea-plugin>
+    <depends>IvyIDEA</depends>
+
+    <applicationListeners>
+        <listener class="com.github.xeonkryptos.eclipseprojectcreator.ivy.IvyFileCreationListener"
+                  topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+    </applicationListeners>
+</idea-plugin>
