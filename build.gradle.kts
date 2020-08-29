@@ -71,7 +71,7 @@ detekt {
 
 ktlint {
     outputToConsole.set(true)
-    disabledRules.add("indent")
+    disabledRules.addAll("indent", "import-ordering")
 }
 
 tasks {
