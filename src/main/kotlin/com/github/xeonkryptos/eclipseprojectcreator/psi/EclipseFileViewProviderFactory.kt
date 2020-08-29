@@ -13,6 +13,6 @@ import com.intellij.psi.PsiManager
 class EclipseFileViewProviderFactory : FileViewProviderFactory {
 
     override fun createFileViewProvider(file: VirtualFile, language: Language?, manager: PsiManager, eventSystemEnabled: Boolean): FileViewProvider {
-        return EclipseFileViewProvider(manager, file, eventSystemEnabled);
+        return EclipseFileViewProvider(manager, file, eventSystemEnabled)
     }
 }

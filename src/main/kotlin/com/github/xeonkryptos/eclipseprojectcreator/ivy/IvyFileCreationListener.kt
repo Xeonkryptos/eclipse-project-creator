@@ -11,10 +11,9 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileCreateEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
-import org.jetbrains.annotations.NotNull
-import java.util.*
+import java.util.Objects
 import java.util.stream.Collectors
-import kotlin.collections.ArrayList
+import org.jetbrains.annotations.NotNull
 
 /**
  * @author Xeonkryptos
@@ -30,21 +29,21 @@ class IvyFileCreationListener : BulkFileListener {
     @Override
     @SuppressWarnings("unchecked")
     override fun before(@NotNull events: List<VFileEvent>) {
-        val openProjects = projectManager.openProjects;
+        val openProjects = projectManager.openProjects
         val fileIndices = ArrayList<Pair<Project, ProjectFileIndex>>(openProjects.size)
         for (i in openProjects.indices) {
-            val openProject = openProjects[i];
-            val projectRootManager = ProjectRootManager.getInstance(openProject);
-            fileIndices.add(Pair(openProject, projectRootManager.fileIndex));
+            val openProject = openProjects[i]
+            val projectRootManager = ProjectRootManager.getInstance(openProject)
+            fileIndices.add(Pair(openProject, projectRootManager.fileIndex))
         }
         this.fileIndices = fileIndices
         eclipseFileCreationEvents = events.stream()
-                .filter { it.isValid }
-                .filter { it is VFileCreateEvent }
-                .map { it as VFileCreateEvent }
-                .filter { !it.isDirectory }
-                .filter { ".classpath" == it.childName || ".project" == it.childName }
-                .collect(Collectors.toList())
+            .filter { it.isValid }
+            .filter { it is VFileCreateEvent }
+            .map { it as VFileCreateEvent }
+            .filter { !it.isDirectory }
+            .filter { ".classpath" == it.childName || ".project" == it.childName }
+            .collect(Collectors.toList())
     }
 
     @Override
@@ -58,7 +57,7 @@ class IvyFileCreationListener : BulkFileListener {
                         val moduleRootManager = ModuleRootManager.getInstance(module)
                         val moduleFileIndex = moduleRootManager.fileIndex
                         if (moduleFileIndex.isInContent(virtualFile)) {
-                            return@map Pair<Pair<Project, Module?>, VirtualFile?>(Pair<Project, Module?>(pair.first, module), virtualFile);
+                            return@map Pair<Pair<Project, Module?>, VirtualFile?>(Pair<Project, Module?>(pair.first, module), virtualFile)
                         }
                     }
                     return@map Pair<Pair<Project, Module?>, VirtualFile?>(Pair<Project, Module?>(pair.first, null), virtualFile)
@@ -71,6 +70,6 @@ class IvyFileCreationListener : BulkFileListener {
             } else if (pair?.second?.isInLocalFileSystem == true) {
                 EclipseIvyUpdater.updateClasspathFile(pair.first.first, pair.first.second!!, pair.second!!)
             }
-        };
+        }
     }
 }

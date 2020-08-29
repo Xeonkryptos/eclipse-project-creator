@@ -9,7 +9,7 @@ import javax.swing.Icon
  * @author Xeonkryptos
  * @since 26.08.2020
  */
-class EclipseFrameworkType: FrameworkTypeEx("Eclipse") {
+class EclipseFrameworkType : FrameworkTypeEx("Eclipse") {
 
     override fun getPresentableName(): String {
         return "Eclipse"

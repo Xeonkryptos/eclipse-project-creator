@@ -10,4 +10,7 @@ import org.jetbrains.annotations.NotNull
  * @author Xeonkryptos
  * @since 28.08.2020
  */
-class EclipseFileViewProvider(@NotNull manager: PsiManager, @NotNull virtualFile: VirtualFile, eventSystemEnabled: Boolean) : SingleRootFileViewProvider(manager, virtualFile, eventSystemEnabled, XMLLanguage.INSTANCE)
+class EclipseFileViewProvider(@NotNull manager: PsiManager, @NotNull virtualFile: VirtualFile, eventSystemEnabled: Boolean) : SingleRootFileViewProvider(manager,
+    virtualFile,
+    eventSystemEnabled,
+    XMLLanguage.INSTANCE)

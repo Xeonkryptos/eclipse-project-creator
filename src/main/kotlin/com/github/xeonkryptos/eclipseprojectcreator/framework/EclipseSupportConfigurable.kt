@@ -10,12 +10,12 @@ import com.intellij.openapi.roots.ModifiableModelsProvider
 import com.intellij.openapi.roots.ModifiableRootModel
 import com.intellij.openapi.roots.ui.configuration.libraries.CustomLibraryDescription
 import com.intellij.openapi.vfs.VirtualFileManager
-import org.apache.groovy.util.Maps
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import javax.swing.JComponent
+import org.apache.groovy.util.Maps
 
 /**
  * @author Xeonkryptos

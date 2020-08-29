@@ -8,7 +8,6 @@ import com.intellij.ide.util.projectWizard.JavaModuleBuilder
 import com.intellij.ide.util.projectWizard.ModuleBuilder
 import com.intellij.openapi.module.ModuleType
 import com.intellij.openapi.module.StdModuleTypes
-import org.jetbrains.jps.incremental.java.JavaBuilder
 
 /**
  * @author Xeonkryptos
