@@ -4,6 +4,13 @@
 
 ## [Unreleased]
 
+## [0.0.2] - 2020-08-30
+
+### Added
+
+- Support for basic synchronization of sources roots of a module into Eclipse's .classpath when IntelliJ doesn't sync into it by itself
+- Use constants available by the bundled Eclipse plugin
+
 ## [0.0.1] - 2020-08-28
 
 ### Added

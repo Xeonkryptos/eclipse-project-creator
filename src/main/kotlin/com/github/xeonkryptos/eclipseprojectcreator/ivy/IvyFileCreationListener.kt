@@ -14,6 +14,7 @@ import com.intellij.openapi.vfs.newvfs.events.VFileEvent
 import java.util.Objects
 import java.util.stream.Collectors
 import org.jetbrains.annotations.NotNull
+import org.jetbrains.idea.eclipse.EclipseXml
 
 /**
  * @author Xeonkryptos
@@ -42,7 +43,7 @@ class IvyFileCreationListener : BulkFileListener {
             .filter { it is VFileCreateEvent }
             .map { it as VFileCreateEvent }
             .filter { !it.isDirectory }
-            .filter { ".classpath" == it.childName || ".project" == it.childName }
+            .filter { EclipseXml.CLASSPATH_FILE == it.childName || EclipseXml.PROJECT_FILE == it.childName }
             .collect(Collectors.toList())
     }
 
@@ -65,10 +66,10 @@ class IvyFileCreationListener : BulkFileListener {
             }
             return@map null
         }?.filter(Objects::nonNull)?.forEach { pair ->
-            if (".project" == pair?.second?.name && pair.second?.isInLocalFileSystem == true) {
-                EclipseIvyUpdater.updateProjectFile(pair.first.first, pair.second!!)
+            if (EclipseXml.PROJECT_FILE == pair?.second?.name && pair.second?.isInLocalFileSystem == true) {
+                EclipseIvyUpdater.updateProjectFileWithIvyNature(pair.first.first, pair.second!!)
             } else if (pair?.second?.isInLocalFileSystem == true) {
-                EclipseIvyUpdater.updateClasspathFile(pair.first.first, pair.first.second!!, pair.second!!)
+                EclipseIvyUpdater.updateClasspathFileWithIvyContainer(pair.first.first, pair.first.second!!, pair.second!!)
             }
         }
     }

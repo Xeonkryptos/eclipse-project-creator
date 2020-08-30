@@ -12,6 +12,8 @@ To improve this behaviour this small plugin adds Eclipse as external framework s
 you to create with the basic project structure defined by IntelliJ the .project and .classpath file set to the minimum required. You don't need to bother to create them by yourself or use the export
 feature of the bundled Eclipse plugin.
 
+To improve your usual work life, sources roots are synced into your .classpath file on every change as long as you don't let IntelliJ the syncing.
+
 Additionally, it supports Ivy in such as if it detects the installed plugin IvyIDEA and its facet on a module, it automatically updates the .classpath and .project files. Required is the modified version
 of IvyIDEA that adds the same library creation support into the project wizard as this plugin provides. The modified version you'll find [here](https://github.com/Xeonkryptos/ivyidea/tree/new-features).
 <!-- Plugin description end -->
