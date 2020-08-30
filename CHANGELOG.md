@@ -3,5 +3,9 @@
 # eclipse-project-creator Changelog
 
 ## [Unreleased]
+
+## [0.0.1] - 2020-08-28
+
 ### Added
-- Initial scaffold created from [IntelliJ Platform Plugin Template](https://github.com/JetBrains/intellij-platform-plugin-template)
+- Support for Eclipse as framework when creating Java projects/modules via the wizards
+- Support for IvyIDEA to modify .project and .classpath file with ivy nature and ivy container
