@@ -8,8 +8,7 @@
 
 ### Changed
 
-- Modified keys provided for coalesceBy when starting a non blocked read action
-- Make build compatible with IntelliJ IDEA 202.1
+- Modified keys provided for coalesceBy when starting a non blocked read action 
 
 ## [0.0.2] - 2020-08-30
 
