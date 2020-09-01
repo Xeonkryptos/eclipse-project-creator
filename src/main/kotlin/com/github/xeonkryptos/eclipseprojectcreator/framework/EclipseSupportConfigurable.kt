@@ -57,10 +57,10 @@ class EclipseSupportConfigurable : FrameworkSupportInModuleConfigurable() {
         FacetTypeRegistry.getInstance().facetTypeIds.first { facetTypeId -> facetTypeId.toString() == "IvyIDEA" }.let { ivyIdeaFacetType ->
             if (ProjectFacetManager.getInstance(module.project).getModulesWithFacet(ivyIdeaFacetType).contains(module)) {
                 val virtualFileManager = VirtualFileManager.getInstance()
-                virtualFileManager.findFileByNioPath(projectTargetFile)?.let {
+                virtualFileManager.findFileByUrl(projectTargetFile.toUri().toURL().toExternalForm())?.let {
                     EclipseIvyUpdater.updateProjectFileWithIvyNature(module.project, it)
                 }
-                virtualFileManager.findFileByNioPath(classpathTargetFile)?.let {
+                virtualFileManager.findFileByUrl(classpathTargetFile.toUri().toURL().toExternalForm())?.let {
                     EclipseIvyUpdater.updateClasspathFileWithIvyContainer(module.project, module, it)
                 }
             }
