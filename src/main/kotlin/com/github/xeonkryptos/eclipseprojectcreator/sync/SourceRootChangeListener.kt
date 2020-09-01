@@ -39,11 +39,12 @@ class SourceRootChangeListener : ModuleRootListener {
     private val eclipseModules: MutableMap<Module, ChangeableSourceRoots> = ConcurrentHashMap()
 
     override fun rootsChanged(event: ModuleRootEvent) {
-        val projectCreatorService = ServiceManager.getService(event.project, DisposableSyncService::class.java)
-        ReadAction.nonBlocking(Callable { findChangedModuleSourceRoots(event.project) })
-            .coalesceBy(event.project, UNIQUE_ID)
+        val project = event.project
+        val projectCreatorService = ServiceManager.getService(project, DisposableSyncService::class.java)
+        ReadAction.nonBlocking(Callable { findChangedModuleSourceRoots(project) })
+            .coalesceBy(project, UNIQUE_ID)
             .expireWith(projectCreatorService)
-            .inSmartMode(event.project)
+            .inSmartMode(project)
             .finishOnUiThread(ModalityState.NON_MODAL) { executeClasspathUpdateSync(it) }
             .submit(AppExecutorUtil.getAppExecutorService())
     }

@@ -15,7 +15,6 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import javax.swing.JComponent
-import org.apache.groovy.util.Maps
 import org.jetbrains.idea.eclipse.EclipseXml
 
 /**
@@ -41,7 +40,7 @@ class EclipseSupportConfigurable : FrameworkSupportInModuleConfigurable() {
         val projectTargetFile = moduleBaseDir.resolveSibling(EclipseXml.PROJECT_FILE)
         val classpathTargetFile = moduleBaseDir.resolveSibling(EclipseXml.CLASSPATH_FILE)
 
-        val templateAttributes = Maps.of("MODULE_NAME", module.name)
+        val templateAttributes = mapOf(Pair("MODULE_NAME", module.name))
         Files.newBufferedWriter(projectTargetFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE).use { writer ->
             this::class.java.getResource("/templates/.project")?.readText(StandardCharsets.UTF_8)?.let { fileContent ->
                 val finalizedProjectFileContent = FileTemplateUtil.mergeTemplate(templateAttributes, fileContent, true)
@@ -57,10 +56,11 @@ class EclipseSupportConfigurable : FrameworkSupportInModuleConfigurable() {
 
         FacetTypeRegistry.getInstance().facetTypeIds.first { facetTypeId -> facetTypeId.toString() == "IvyIDEA" }.let { ivyIdeaFacetType ->
             if (ProjectFacetManager.getInstance(module.project).getModulesWithFacet(ivyIdeaFacetType).contains(module)) {
-                VirtualFileManager.getInstance().findFileByNioPath(projectTargetFile)?.let {
+                val virtualFileManager = VirtualFileManager.getInstance()
+                virtualFileManager.findFileByNioPath(projectTargetFile)?.let {
                     EclipseIvyUpdater.updateProjectFileWithIvyNature(module.project, it)
                 }
-                VirtualFileManager.getInstance().findFileByNioPath(classpathTargetFile)?.let {
+                virtualFileManager.findFileByNioPath(classpathTargetFile)?.let {
                     EclipseIvyUpdater.updateClasspathFileWithIvyContainer(module.project, module, it)
                 }
             }
