@@ -2,7 +2,11 @@
 
 # eclipse-project-creator Changelog
 
-## [Unreleased]
+## [0.0.3] - 2020-09-01
+
+### Changed
+
+- Modified keys provided for coalesceBy when starting a non blocked read action 
 
 ## [0.0.2] - 2020-08-30
 

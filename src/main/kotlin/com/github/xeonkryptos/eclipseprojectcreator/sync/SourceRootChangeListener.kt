@@ -31,14 +31,19 @@ import org.jetbrains.jps.eclipse.model.JpsEclipseClasspathSerializer
  */
 class SourceRootChangeListener : ModuleRootListener {
 
+    companion object {
+        @JvmStatic
+        private val UNIQUE_ID: String = "ECLIPSE_PROJECT_CREATOR_SOURCE_ROOT_CHANGE_LISTENER"
+    }
+
     private val eclipseModules: MutableMap<Module, ChangeableSourceRoots> = ConcurrentHashMap()
 
     override fun rootsChanged(event: ModuleRootEvent) {
         val projectCreatorService = ServiceManager.getService(event.project, DisposableSyncService::class.java)
         ReadAction.nonBlocking(Callable { findChangedModuleSourceRoots(event.project) })
+            .coalesceBy(event.project, UNIQUE_ID)
             .expireWith(projectCreatorService)
             .inSmartMode(event.project)
-            .coalesceBy(event.project, this)
             .finishOnUiThread(ModalityState.NON_MODAL) { executeClasspathUpdateSync(it) }
             .submit(AppExecutorUtil.getAppExecutorService())
     }
