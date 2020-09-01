@@ -2,6 +2,8 @@
 
 # eclipse-project-creator Changelog
 
+## [Unreleased]
+
 ## [0.0.3] - 2020-09-01
 
 ### Changed
