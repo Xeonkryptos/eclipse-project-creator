@@ -33,40 +33,43 @@ class SourceRootChangeListener : ModuleRootListener {
 
     companion object {
         @JvmStatic
-        private val UNIQUE_ID: String = "ECLIPSE_PROJECT_CREATOR_SOURCE_ROOT_CHANGE_LISTENER"
+        private val UNIQUE_ID = "ECLIPSE_PROJECT_CREATOR_SOURCE_ROOT_CHANGE_LISTENER"
+        @JvmStatic
+        private val BOUNDED_ECLIPSE_SOURCE_ROOT_CHANGE_LISTENER = AppExecutorUtil.createBoundedApplicationPoolExecutor("Bounded Eclipse File Updater", 4)
     }
 
     private val eclipseModules: MutableMap<Module, ChangeableSourceRoots> = ConcurrentHashMap()
 
     override fun rootsChanged(event: ModuleRootEvent) {
-        val project = event.project
-        val projectCreatorService = ServiceManager.getService(project, DisposableSyncService::class.java)
-        ReadAction.nonBlocking(Callable { findChangedModuleSourceRoots(project) })
-            .coalesceBy(project, UNIQUE_ID)
+        val projectCreatorService = ServiceManager.getService(event.project, DisposableSyncService::class.java)
+        ReadAction.nonBlocking(Callable { findChangedModuleSourceRoots(event.project) })
+            .coalesceBy(event.project, UNIQUE_ID)
             .expireWith(projectCreatorService)
-            .inSmartMode(project)
+            .inSmartMode(event.project)
+            .withDocumentsCommitted(event.project)
             .finishOnUiThread(ModalityState.NON_MODAL) { executeClasspathUpdateSync(it) }
-            .submit(AppExecutorUtil.getAppExecutorService())
+            .submit(BOUNDED_ECLIPSE_SOURCE_ROOT_CHANGE_LISTENER)
     }
 
     private fun findChangedModuleSourceRoots(project: Project): List<DataHolder> {
         val classpathFiles = FilenameIndex.getFilesByName(project, EclipseXml.CLASSPATH_FILE, GlobalSearchScope.projectScope(project))
         return ModuleManager.getInstance(project).modules.filter { ClassPathStorageUtil.getStorageType(it) != JpsEclipseClasspathSerializer.CLASSPATH_STORAGE_ID }.mapNotNull { module ->
-                val fileIndex = ModuleRootManager.getInstance(module).fileIndex
+            val fileIndex = ModuleRootManager.getInstance(module).fileIndex
 
-                classpathFiles.filter { classpathFile -> fileIndex.isInContent(classpathFile.virtualFile) }.firstOrNull {
-                    val changeableSourceRoots = eclipseModules.computeIfAbsent(module) {
-                        return@computeIfAbsent ChangeableSourceRoots()
-                    }
-                    changeableSourceRoots.updateSourcesRoots(ModuleRootManager.getInstance(module).sourceRoots)
-                    if (changeableSourceRoots.changed) {
-                        return@mapNotNull DataHolder(module, changeableSourceRoots.sourceRoots, classpathFiles.first())
-                    }
-                    return@mapNotNull null
+            classpathFiles.filter { classpathFile -> fileIndex.isInContent(classpathFile.virtualFile) }.firstOrNull {
+                val changeableSourceRoots = eclipseModules.computeIfAbsent(module) {
+                    return@computeIfAbsent ChangeableSourceRoots()
                 }
-                eclipseModules.remove(module)
+                val sourceRoots = ModuleRootManager.getInstance(module).sourceRoots.filter { sourceRootFile -> sourceRootFile.isValid && sourceRootFile.exists() }
+                changeableSourceRoots.updateSourcesRoots(sourceRoots)
+                if (changeableSourceRoots.changed) {
+                    return@mapNotNull DataHolder(module, changeableSourceRoots.sourceRoots, classpathFiles.first())
+                }
                 return@mapNotNull null
             }
+            eclipseModules.remove(module)
+            return@mapNotNull null
+        }
     }
 
     private fun executeClasspathUpdateSync(dataHolders: List<DataHolder>) {
@@ -94,7 +97,7 @@ class SourceRootChangeListener : ModuleRootListener {
         var changed = true
 
         @Synchronized
-        fun updateSourcesRoots(currentSourcesRoots: Array<VirtualFile>) {
+        fun updateSourcesRoots(currentSourcesRoots: List<VirtualFile>) {
             changed = _sourceRoots.retainAll(currentSourcesRoots) or changed
             changed = _sourceRoots.addAll(currentSourcesRoots) or changed
         }
@@ -110,29 +113,43 @@ class SourceRootChangeListener : ModuleRootListener {
             val psiClasspathFile = classpathFile as XmlFile
 
             val deletableEntries: MutableSet<XmlTag> = HashSet()
-            psiClasspathFile.rootTag?.findSubTags(EclipseXml.CLASSPATHENTRY_TAG)?.let { classPathEntryTags ->
-                for (classPathEntryTag in classPathEntryTags) {
-                    val kindAttribute = classPathEntryTag.getAttributeValue(EclipseXml.KIND_ATTR)
-                    val pathAttribute = classPathEntryTag.getAttribute(EclipseXml.PATH_ATTR)
-
-                    if (kindAttribute?.equals("src") == true && !localChangeableSourceRoots.contains(pathAttribute?.value)) {
-                        deletableEntries.add(classPathEntryTag)
-                        localChangeableSourceRoots.remove(pathAttribute?.value)
-                    } else if (kindAttribute?.equals("src") == true && localChangeableSourceRoots.contains(pathAttribute?.value)) {
-                        localChangeableSourceRoots.remove(pathAttribute?.value)
-                    }
-                }
-            }
+            var lastFoundSrcTag: XmlTag? = null
+            psiClasspathFile.rootTag?.findSubTags(EclipseXml.CLASSPATHENTRY_TAG)?.let { classPathEntryTags -> lastFoundSrcTag = synchronizeChangeableSourceRoots(classPathEntryTags, deletableEntries) }
             WriteCommandAction.runWriteCommandAction(classpathFile.project) {
                 deletableEntries.forEach { it.delete() }
 
                 localChangeableSourceRoots.forEach {
                     val classPathEntryTag = psiClasspathFile.rootTag?.createChildTag(EclipseXml.CLASSPATHENTRY_TAG, null, null, false)
-                    classPathEntryTag?.setAttribute(EclipseXml.KIND_ATTR, EclipseXml.SRC_KIND)
-                    classPathEntryTag?.setAttribute(EclipseXml.PATH_ATTR, it)
-                    psiClasspathFile.rootTag?.addSubTag(classPathEntryTag, false)
+                    if (classPathEntryTag != null) {
+                        classPathEntryTag.setAttribute(EclipseXml.KIND_ATTR, EclipseXml.SRC_KIND)
+                        classPathEntryTag.setAttribute(EclipseXml.PATH_ATTR, it)
+                        if (lastFoundSrcTag != null) {
+                            psiClasspathFile.rootTag?.addAfter(classPathEntryTag, lastFoundSrcTag)
+                        } else {
+                            psiClasspathFile.rootTag?.addSubTag(classPathEntryTag, true)
+                        }
+                    }
                 }
             }
+        }
+
+        private fun synchronizeChangeableSourceRoots(classPathEntryTags: Array<XmlTag>, deletableEntries: MutableSet<XmlTag>): XmlTag? {
+            var lastFoundSrcTag: XmlTag? = null
+            for (classPathEntryTag in classPathEntryTags) {
+                val kindAttribute = classPathEntryTag.getAttributeValue(EclipseXml.KIND_ATTR)
+                val pathAttribute = classPathEntryTag.getAttribute(EclipseXml.PATH_ATTR)
+
+                if (kindAttribute != null && kindAttribute == "src" && pathAttribute != null) {
+                    if (!localChangeableSourceRoots.contains(pathAttribute.value)) {
+                        deletableEntries.add(classPathEntryTag)
+                        localChangeableSourceRoots.remove(pathAttribute.value)
+                    } else if (localChangeableSourceRoots.contains(pathAttribute.value)) {
+                        localChangeableSourceRoots.remove(pathAttribute.value)
+                        lastFoundSrcTag = classPathEntryTag
+                    }
+                }
+            }
+            return lastFoundSrcTag
         }
     }
 }
