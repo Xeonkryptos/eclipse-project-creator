@@ -7,12 +7,17 @@
 ### Added
 
 - Ensures, only those source roots are defined within the .classpath file that really exists within the local file system. Source roots directories removed from the file system gets removed from within
-the .classpath file, too. 
+the .classpath file, too.
+- Removing ivy container reference imported by Eclipse project import basing on an ivy project within the module's dependency list as long as the IvyIDEA project is installed
 
 ### Changed
 
-- Fixed too many threads with the same stacktrace when module roots changes
 - Place new src tags after the last found one or at the start of the file
+
+### Fixed
+
+- Fixed too many threads with the same stacktrace when module roots changes
+- Fixed update mechanism when modifying local files (shouldn't throw an invalid file tree exception anymore)
 
 ## [0.0.3] - 2020-09-01
 

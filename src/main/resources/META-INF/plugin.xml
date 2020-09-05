@@ -17,8 +17,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <framework.type implementation="com.github.xeonkryptos.eclipseprojectcreator.framework.EclipseFrameworkType"/>
-        <fileType.fileViewProviderFactory filetype="Eclipse"
-                                          implementationClass="com.github.xeonkryptos.eclipseprojectcreator.psi.EclipseFileViewProviderFactory"/>
+        <fileType.fileViewProviderFactory filetype="Eclipse" implementationClass="com.github.xeonkryptos.eclipseprojectcreator.psi.EclipseFileViewProviderFactory"/>
         <projectService serviceImplementation="com.github.xeonkryptos.eclipseprojectcreator.sync.DisposableSyncService"/>
     </extensions>
 </idea-plugin>

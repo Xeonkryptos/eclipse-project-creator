@@ -1,6 +1,6 @@
 package com.github.xeonkryptos.eclipseprojectcreator.ivy
 
-import com.intellij.openapi.command.WriteCommandAction
+import com.github.xeonkryptos.eclipseprojectcreator.helper.PsiDocumentWriterHelper
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
@@ -26,7 +26,7 @@ class EclipseIvyUpdater private constructor() {
                     val kindAttribute = classPathEntryTag.getAttributeValue(EclipseXml.KIND_ATTR)
                     val pathAttribute = classPathEntryTag.getAttributeValue(EclipseXml.PATH_ATTR)
 
-                    if (kindAttribute?.equals("con") == true && pathAttribute?.startsWith("org.apache.ivyde.eclipse.cpcontainer.IVYDE_CONTAINER") == true) {
+                    if (isKindOfTypeCon(kindAttribute) && isPathAttributeReferencingToIvy(pathAttribute)) {
                         notFound = false
                         break
                     }
@@ -35,23 +35,27 @@ class EclipseIvyUpdater private constructor() {
             if (notFound) {
                 val classPathEntryTag = psiClasspathFile.rootTag?.createChildTag(EclipseXml.CLASSPATHENTRY_TAG, null, null, false)
                 classPathEntryTag?.setAttribute(EclipseXml.KIND_ATTR, EclipseXml.CON_KIND)
-                classPathEntryTag?.setAttribute(EclipseXml.PATH_ATTR, "org.apache.ivyde.eclipse.cpcontainer.IVYDE_CONTAINER/?project=" + module.name + "\$amp;ivyXmlPath=ivy.xml\$amp;confs=*")
-                WriteCommandAction.runWriteCommandAction(project) {
-                    psiClasspathFile.rootTag?.addSubTag(classPathEntryTag, false)
-                }
+                classPathEntryTag?.setAttribute(EclipseXml.PATH_ATTR, "${EclipseIvyCommons.IVYDE_CONTAINER_NAME}/?project=${module.name}\$amp;ivyXmlPath=ivy.xml\$amp;confs=*")
+                PsiDocumentWriterHelper.executePsiWriteAction(project, psiClasspathFile) { psiClasspathFile.rootTag?.addSubTag(classPathEntryTag, false) }
             }
+        }
+
+        private fun isKindOfTypeCon(kindAttribute: String?): Boolean {
+            return kindAttribute != null && kindAttribute == "con"
+        }
+
+        private fun isPathAttributeReferencingToIvy(pathAttribute: String?): Boolean {
+            return pathAttribute != null && pathAttribute.startsWith(EclipseIvyCommons.IVYDE_CONTAINER_NAME)
         }
 
         @JvmStatic
         fun updateProjectFileWithIvyNature(project: Project, virtualProjectFile: VirtualFile) {
             val psiProjectFile = PsiManager.getInstance(project).findFile(virtualProjectFile) as XmlFile
             val naturesTag = psiProjectFile.rootTag?.findFirstSubTag("natures")
-            val ivyNatureFound = naturesTag?.findSubTags("nature")?.any { natureTag -> natureTag.textMatches("org.apache.ivyde.eclipse.ivynature") }
+            val ivyNatureFound = naturesTag?.findSubTags("nature")?.any { natureTag -> natureTag.textMatches(EclipseIvyCommons.IVY_NATURE) }
             if (ivyNatureFound == null || ivyNatureFound == false) {
-                val natureChildTag = naturesTag?.createChildTag("nature", null, "org.apache.ivyde.eclipse.ivynature", false)
-                WriteCommandAction.runWriteCommandAction(project) {
-                    naturesTag?.addSubTag(natureChildTag, false)
-                }
+                val natureChildTag = naturesTag?.createChildTag("nature", null, EclipseIvyCommons.IVY_NATURE, false)
+                PsiDocumentWriterHelper.executePsiWriteAction(project, psiProjectFile) { naturesTag?.addSubTag(natureChildTag, false) }
             }
         }
     }

@@ -1,8 +1,8 @@
 package com.github.xeonkryptos.eclipseprojectcreator.sync
 
+import com.github.xeonkryptos.eclipseprojectcreator.helper.PsiDocumentWriterHelper
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.ReadAction
-import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
@@ -81,7 +81,7 @@ class SourceRootChangeListener : ModuleRootListener {
                 }.mapNotNull { virtualSourceRootFile ->
                     VfsUtilCore.getRelativeLocation(virtualSourceRootFile, moduleRootDir)
                 }
-                return@mapNotNull ClasspathUpdateAction(convertedSourceRoots, it.classpathFile)
+                return@mapNotNull ClasspathUpdateAction(it.module.project, convertedSourceRoots, it.classpathFile)
             }
             return@mapNotNull null
         }.forEach { it.updateClasspathFile() }
@@ -105,7 +105,7 @@ class SourceRootChangeListener : ModuleRootListener {
 
     internal data class DataHolder(val module: Module, val changeableSourcesRoots: Set<VirtualFile>, val classpathFile: PsiFile)
 
-    internal class ClasspathUpdateAction(changeableSourceRoots: List<String>, private val classpathFile: PsiFile) {
+    internal class ClasspathUpdateAction(private val project: Project, changeableSourceRoots: List<String>, private val classpathFile: PsiFile) {
 
         private val localChangeableSourceRoots = HashSet(changeableSourceRoots)
 
@@ -115,7 +115,8 @@ class SourceRootChangeListener : ModuleRootListener {
             val deletableEntries: MutableSet<XmlTag> = HashSet()
             var lastFoundSrcTag: XmlTag? = null
             psiClasspathFile.rootTag?.findSubTags(EclipseXml.CLASSPATHENTRY_TAG)?.let { classPathEntryTags -> lastFoundSrcTag = synchronizeChangeableSourceRoots(classPathEntryTags, deletableEntries) }
-            WriteCommandAction.runWriteCommandAction(classpathFile.project) {
+
+            PsiDocumentWriterHelper.executePsiWriteAction(project, psiClasspathFile) {
                 deletableEntries.forEach { it.delete() }
 
                 localChangeableSourceRoots.forEach {
