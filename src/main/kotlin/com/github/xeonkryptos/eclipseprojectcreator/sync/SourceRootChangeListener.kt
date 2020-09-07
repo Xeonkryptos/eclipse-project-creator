@@ -19,9 +19,9 @@ import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.xml.XmlFile
 import com.intellij.psi.xml.XmlTag
 import com.intellij.util.concurrency.AppExecutorUtil
+import com.intellij.util.containers.mapSmartSet
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CopyOnWriteArraySet
 import org.jetbrains.idea.eclipse.EclipseXml
 import org.jetbrains.jps.eclipse.model.JpsEclipseClasspathSerializer
 
@@ -34,6 +34,7 @@ class SourceRootChangeListener : ModuleRootListener {
     companion object {
         @JvmStatic
         private val UNIQUE_ID = "ECLIPSE_PROJECT_CREATOR_SOURCE_ROOT_CHANGE_LISTENER"
+
         @JvmStatic
         private val BOUNDED_ECLIPSE_SOURCE_ROOT_CHANGE_LISTENER = AppExecutorUtil.createBoundedApplicationPoolExecutor("Bounded Eclipse File Updater", 4)
     }
@@ -76,11 +77,8 @@ class SourceRootChangeListener : ModuleRootListener {
         dataHolders.mapNotNull {
             val moduleRootDir = it.module.moduleFile?.parent
             if (moduleRootDir != null) {
-                val convertedSourceRoots = it.changeableSourcesRoots.filter { virtualSourceRootFile ->
-                    virtualSourceRootFile.isValid
-                }.mapNotNull { virtualSourceRootFile ->
-                    VfsUtilCore.getRelativeLocation(virtualSourceRootFile, moduleRootDir)
-                }
+                val convertedSourceRoots = it.changeableSourcesRoots.filter { virtualSourceRootFile -> virtualSourceRootFile.isValid }
+                    .mapNotNull { virtualSourceRootFile -> VfsUtilCore.getRelativeLocation(virtualSourceRootFile, moduleRootDir) }
                 return@mapNotNull ClasspathUpdateAction(it.module.project, convertedSourceRoots, it.classpathFile)
             }
             return@mapNotNull null
@@ -89,17 +87,33 @@ class SourceRootChangeListener : ModuleRootListener {
 
     internal class ChangeableSourceRoots {
 
-        private val _sourceRoots: MutableSet<VirtualFile> = CopyOnWriteArraySet()
+        private val _sourceRoots: MutableSet<VirtualFileWrapper> = HashSet()
 
-        val sourceRoots: Set<VirtualFile> = _sourceRoots
+        val sourceRoots: Set<VirtualFile>
+            get() {
+                return _sourceRoots.mapSmartSet { wrapper -> wrapper.virtualFile }
+            }
 
-        @Volatile
         var changed = true
 
-        @Synchronized
         fun updateSourcesRoots(currentSourcesRoots: List<VirtualFile>) {
-            changed = _sourceRoots.retainAll(currentSourcesRoots) or changed
-            changed = _sourceRoots.addAll(currentSourcesRoots) or changed
+            val convertedSourcesRoots = currentSourcesRoots.map { virtualFile -> VirtualFileWrapper(virtualFile) }
+            changed = _sourceRoots.retainAll(convertedSourcesRoots) or changed
+            changed = _sourceRoots.addAll(convertedSourcesRoots) or changed
+        }
+
+        internal class VirtualFileWrapper(val virtualFile: VirtualFile) {
+
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (other !is VirtualFileWrapper) return false
+
+                return virtualFile.path == other.virtualFile.path
+            }
+
+            override fun hashCode(): Int {
+                return virtualFile.path.hashCode()
+            }
         }
     }
 
@@ -114,7 +128,7 @@ class SourceRootChangeListener : ModuleRootListener {
 
             val deletableEntries: MutableSet<XmlTag> = HashSet()
             var lastFoundSrcTag: XmlTag? = null
-            psiClasspathFile.rootTag?.findSubTags(EclipseXml.CLASSPATHENTRY_TAG)?.let { classPathEntryTags -> lastFoundSrcTag = synchronizeChangeableSourceRoots(classPathEntryTags, deletableEntries) }
+            psiClasspathFile.rootTag?.findSubTags(EclipseXml.CLASSPATHENTRY_TAG)?.let { lastFoundSrcTag = synchronizeChangeableSourceRoots(it, deletableEntries) }
 
             PsiDocumentWriterHelper.executePsiWriteAction(project, psiClasspathFile) {
                 deletableEntries.forEach { it.delete() }
