@@ -2,7 +2,7 @@
 
 # eclipse-project-creator Changelog
 
-## [Unreleased]
+## [0.0.4] - 2020-09-08
 
 ### Added
 
@@ -13,11 +13,13 @@ the .classpath file, too.
 ### Changed
 
 - Place new src tags after the last found one or at the start of the file
+- Only synchronize existing source entries into .classpath
 
 ### Fixed
 
 - Fixed too many threads with the same stacktrace when module roots changes
 - Fixed update mechanism when modifying local files (shouldn't throw an invalid file tree exception anymore)
+- Fixed synchronization of source roots into .classpath files of the modules
 
 ## [0.0.3] - 2020-09-01
 

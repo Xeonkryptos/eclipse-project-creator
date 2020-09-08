@@ -57,14 +57,12 @@ class SourceRootChangeListener : ModuleRootListener {
         return ModuleManager.getInstance(project).modules.filter { ClassPathStorageUtil.getStorageType(it) != JpsEclipseClasspathSerializer.CLASSPATH_STORAGE_ID }.mapNotNull { module ->
             val fileIndex = ModuleRootManager.getInstance(module).fileIndex
 
-            classpathFiles.filter { classpathFile -> fileIndex.isInContent(classpathFile.virtualFile) }.firstOrNull {
-                val changeableSourceRoots = eclipseModules.computeIfAbsent(module) {
-                    return@computeIfAbsent ChangeableSourceRoots()
-                }
-                val sourceRoots = ModuleRootManager.getInstance(module).sourceRoots.filter { sourceRootFile -> sourceRootFile.isValid && sourceRootFile.exists() }
+            classpathFiles.filter { classpathFile -> fileIndex.isInContent(classpathFile.virtualFile) }.firstOrNull { classpathFile ->
+                val changeableSourceRoots = eclipseModules.computeIfAbsent(module) { return@computeIfAbsent ChangeableSourceRoots() }
+                val sourceRoots = ModuleRootManager.getInstance(module).sourceRoots.filter { sourceRootFile -> sourceRootFile.isValid && sourceRootFile.isDirectory && sourceRootFile.exists() }
                 changeableSourceRoots.updateSourcesRoots(sourceRoots)
                 if (changeableSourceRoots.changed) {
-                    return@mapNotNull DataHolder(module, changeableSourceRoots.sourceRoots, classpathFiles.first())
+                    return@mapNotNull DataHolder(module, changeableSourceRoots.sourceRoots, classpathFile)
                 }
                 return@mapNotNull null
             }
@@ -77,7 +75,7 @@ class SourceRootChangeListener : ModuleRootListener {
         dataHolders.mapNotNull {
             val moduleRootDir = it.module.moduleFile?.parent
             if (moduleRootDir != null) {
-                val convertedSourceRoots = it.changeableSourcesRoots.filter { virtualSourceRootFile -> virtualSourceRootFile.isValid }
+                val convertedSourceRoots = it.changeableSourcesRoots.filter { virtualSourceRootFile -> virtualSourceRootFile.isValid && virtualSourceRootFile.exists() }
                     .mapNotNull { virtualSourceRootFile -> VfsUtilCore.getRelativeLocation(virtualSourceRootFile, moduleRootDir) }
                 return@mapNotNull ClasspathUpdateAction(it.module.project, convertedSourceRoots, it.classpathFile)
             }
@@ -126,7 +124,7 @@ class SourceRootChangeListener : ModuleRootListener {
         fun updateClasspathFile() {
             val psiClasspathFile = classpathFile as XmlFile
 
-            val deletableEntries: MutableSet<XmlTag> = HashSet()
+            val deletableEntries: MutableList<XmlTag> = ArrayList()
             var lastFoundSrcTag: XmlTag? = null
             psiClasspathFile.rootTag?.findSubTags(EclipseXml.CLASSPATHENTRY_TAG)?.let { lastFoundSrcTag = synchronizeChangeableSourceRoots(it, deletableEntries) }
 
@@ -148,7 +146,7 @@ class SourceRootChangeListener : ModuleRootListener {
             }
         }
 
-        private fun synchronizeChangeableSourceRoots(classPathEntryTags: Array<XmlTag>, deletableEntries: MutableSet<XmlTag>): XmlTag? {
+        private fun synchronizeChangeableSourceRoots(classPathEntryTags: Array<XmlTag>, deletableEntries: MutableList<XmlTag>): XmlTag? {
             var lastFoundSrcTag: XmlTag? = null
             for (classPathEntryTag in classPathEntryTags) {
                 val kindAttribute = classPathEntryTag.getAttributeValue(EclipseXml.KIND_ATTR)
@@ -157,7 +155,6 @@ class SourceRootChangeListener : ModuleRootListener {
                 if (kindAttribute != null && kindAttribute == "src" && pathAttribute != null) {
                     if (!localChangeableSourceRoots.contains(pathAttribute.value)) {
                         deletableEntries.add(classPathEntryTag)
-                        localChangeableSourceRoots.remove(pathAttribute.value)
                     } else if (localChangeableSourceRoots.contains(pathAttribute.value)) {
                         localChangeableSourceRoots.remove(pathAttribute.value)
                         lastFoundSrcTag = classPathEntryTag
