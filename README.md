@@ -1,8 +1,8 @@
 # eclipse-project-creator
 
 ![Build](https://github.com/Xeonkryptos/eclipse-project-creator/workflows/Build/badge.svg)
-[![Version](https://img.shields.io/jetbrains/plugin/v/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/14967-eclipse-project-creator)
-[![Downloads](https://img.shields.io/jetbrains/plugin/d/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/14967-eclipse-project-creator)
+[![Version](https://img.shields.io/jetbrains/plugin/v/14967-eclipse-project-creator.svg)](https://plugins.jetbrains.com/plugin/14967-eclipse-project-creator)
+[![Downloads](https://img.shields.io/jetbrains/plugin/d/14967-eclipse-project-creator.svg)](https://plugins.jetbrains.com/plugin/14967-eclipse-project-creator)
 
 <!-- Plugin description -->
 Simple and small plugin to improve cooperation with Eclipse. When creating a new project in IntelliJ with the build-in wizard, you'll typically need to add the files required by Eclipse to work
