@@ -89,7 +89,7 @@ class SourceRootChangeListener : ModuleRootListener {
 
         val sourceRoots: Set<VirtualFile>
             get() {
-                return _sourceRoots.mapSmartSet { wrapper -> wrapper.virtualFile }
+                return HashSet(_sourceRoots.map { wrapper -> wrapper.virtualFile })
             }
 
         var changed = true

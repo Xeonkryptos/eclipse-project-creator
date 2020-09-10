@@ -4,8 +4,6 @@
 
 ## [Unreleased]
 
-## [0.0.4] - 2020-09-08
-
 ### Added
 
 - Ensures, only those source roots are defined within the .classpath file that really exists within the local file system. Source roots directories removed from the file system gets removed from within
