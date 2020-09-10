@@ -19,7 +19,6 @@ import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.xml.XmlFile
 import com.intellij.psi.xml.XmlTag
 import com.intellij.util.concurrency.AppExecutorUtil
-import com.intellij.util.containers.mapSmartSet
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import org.jetbrains.idea.eclipse.EclipseXml
