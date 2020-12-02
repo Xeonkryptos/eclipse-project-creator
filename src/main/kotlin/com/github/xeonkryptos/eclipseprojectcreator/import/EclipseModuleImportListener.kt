@@ -8,7 +8,7 @@ import com.intellij.openapi.project.ModuleListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
 import java.nio.file.Files
-import java.nio.file.Path
+import java.nio.file.Paths
 import org.jetbrains.idea.eclipse.EclipseXml
 
 /**
@@ -18,12 +18,11 @@ import org.jetbrains.idea.eclipse.EclipseXml
 class EclipseModuleImportListener : ModuleListener {
 
     override fun moduleAdded(project: Project, module: Module) {
-        val moduleDirPath = Path.of(ModuleUtil.getModuleDirPath(module))
+        val moduleDirPath = Paths.get(ModuleUtil.getModuleDirPath(module))
         val classpathFile = Files.list(moduleDirPath).use { fileStream ->
             fileStream.filter { it.fileName.toString() == EclipseXml.CLASSPATH_FILE }.findFirst().orElse(null)
         }
-        if (classpathFile != null) {
-            // The new module seems to be a new Eclipse project. Not yet sure, if it's an import of an existing module or a creation maybe with this plugin.
+        if (classpathFile != null) { // The new module seems to be a new Eclipse project. Not yet sure, if it's an import of an existing module or a creation maybe with this plugin.
             val relativeNioPath = moduleDirPath.relativize(classpathFile)
             if (relativeNioPath.toString() == EclipseXml.CLASSPATH_FILE) {
                 val modifiableRootModel = ModuleRootManager.getInstance(module).modifiableModel

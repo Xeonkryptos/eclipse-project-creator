@@ -19,7 +19,7 @@ import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.xml.XmlFile
 import com.intellij.psi.xml.XmlTag
 import com.intellij.util.concurrency.AppExecutorUtil
-import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import org.jetbrains.idea.eclipse.EclipseXml
@@ -73,9 +73,9 @@ class SourceRootChangeListener : ModuleRootListener {
 
     private fun executeClasspathUpdateSync(dataHolders: List<DataHolder>) {
         dataHolders.map {
-            val moduleRootDir = Path.of(ModuleUtil.getModuleDirPath(it.module))
+            val moduleRootDir = Paths.get(ModuleUtil.getModuleDirPath(it.module))
             val convertedSourceRoots = it.changeableSourcesRoots.filter { virtualSourceRootFile -> virtualSourceRootFile.isValid && virtualSourceRootFile.exists() }
-                .map { virtualSourceRootFile -> Path.of(virtualSourceRootFile.canonicalPath) }
+                .map { virtualSourceRootFile -> virtualSourceRootFile.toNioPath() }
                 .map { sourceRootPath -> moduleRootDir.relativize(sourceRootPath) }
                 .map { relativePath -> relativePath.toString().replace('\\', '/') }
             return@map ClasspathUpdateAction(it.module.project, convertedSourceRoots, it.classpathFile)

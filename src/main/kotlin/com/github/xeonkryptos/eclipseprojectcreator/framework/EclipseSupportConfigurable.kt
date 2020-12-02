@@ -13,7 +13,7 @@ import com.intellij.openapi.roots.ui.configuration.libraries.CustomLibraryDescri
 import com.intellij.openapi.vfs.VirtualFileManager
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
-import java.nio.file.Path
+import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import javax.swing.JComponent
 import org.jetbrains.idea.eclipse.EclipseXml
@@ -37,7 +37,7 @@ class EclipseSupportConfigurable : FrameworkSupportInModuleConfigurable() {
     }
 
     override fun addSupport(module: Module, rootModel: ModifiableRootModel, modifiableModelsProvider: ModifiableModelsProvider) {
-        val moduleBaseDir = Path.of(ModuleUtil.getModuleDirPath(module))
+        val moduleBaseDir = Paths.get(ModuleUtil.getModuleDirPath(module))
         val projectTargetFile = moduleBaseDir.resolve(EclipseXml.PROJECT_FILE)
         val classpathTargetFile = moduleBaseDir.resolve(EclipseXml.CLASSPATH_FILE)
 
