@@ -10,6 +10,6 @@ import javax.swing.Icon
 interface PluginIcons {
 
     companion object {
-        val ECLIPSE: Icon = IconLoader.getIcon("/icons/eclipse.png")
+        val ECLIPSE: Icon = IconLoader.getIcon("/icons/eclipse.png", PluginIcons::class.java)
     }
 }

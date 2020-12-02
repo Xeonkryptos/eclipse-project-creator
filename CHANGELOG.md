@@ -2,6 +2,14 @@
 
 # eclipse-project-creator Changelog
 
+## [Unreleased]
+
+## Changed
+
+- Updated supported version to IntelliJ 2020.3 (the second)
+- Replaced deprecated API call
+- Replaced internal API calls
+
 ## [0.0.5] - 2020-12-02
 
 ### Changed

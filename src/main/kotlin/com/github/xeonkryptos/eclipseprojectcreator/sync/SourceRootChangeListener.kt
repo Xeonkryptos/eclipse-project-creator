@@ -6,12 +6,12 @@ import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
+import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootEvent
 import com.intellij.openapi.roots.ModuleRootListener
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.impl.storage.ClassPathStorageUtil
-import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.psi.search.FilenameIndex
@@ -19,6 +19,7 @@ import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.xml.XmlFile
 import com.intellij.psi.xml.XmlTag
 import com.intellij.util.concurrency.AppExecutorUtil
+import java.nio.file.Path
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import org.jetbrains.idea.eclipse.EclipseXml
@@ -71,14 +72,13 @@ class SourceRootChangeListener : ModuleRootListener {
     }
 
     private fun executeClasspathUpdateSync(dataHolders: List<DataHolder>) {
-        dataHolders.mapNotNull {
-            val moduleRootDir = it.module.moduleFile?.parent
-            if (moduleRootDir != null) {
-                val convertedSourceRoots = it.changeableSourcesRoots.filter { virtualSourceRootFile -> virtualSourceRootFile.isValid && virtualSourceRootFile.exists() }
-                    .mapNotNull { virtualSourceRootFile -> VfsUtilCore.getRelativeLocation(virtualSourceRootFile, moduleRootDir) }
-                return@mapNotNull ClasspathUpdateAction(it.module.project, convertedSourceRoots, it.classpathFile)
-            }
-            return@mapNotNull null
+        dataHolders.map {
+            val moduleRootDir = Path.of(ModuleUtil.getModuleDirPath(it.module))
+            val convertedSourceRoots = it.changeableSourcesRoots.filter { virtualSourceRootFile -> virtualSourceRootFile.isValid && virtualSourceRootFile.exists() }
+                .map { virtualSourceRootFile -> Path.of(virtualSourceRootFile.canonicalPath) }
+                .map { sourceRootPath -> moduleRootDir.relativize(sourceRootPath) }
+                .map { relativePath -> relativePath.toString().replace('\\', '/') }
+            return@map ClasspathUpdateAction(it.module.project, convertedSourceRoots, it.classpathFile)
         }.forEach { it.updateClasspathFile() }
     }
 
