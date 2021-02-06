@@ -123,22 +123,22 @@ class SourceRootChangeListener : ModuleRootListener {
         fun updateClasspathFile() {
             val psiClasspathFile = classpathFile as XmlFile
 
-            val deletableEntries: MutableList<XmlTag> = ArrayList()
-            var lastFoundSrcTag: XmlTag? = null
-            psiClasspathFile.rootTag?.findSubTags(EclipseXml.CLASSPATHENTRY_TAG)?.let { lastFoundSrcTag = synchronizeChangeableSourceRoots(it, deletableEntries) }
+            PsiDocumentWriterHelper.executePsiWriteAction(project, psiClasspathFile) { localClassPathFile ->
+                val deletableEntries: MutableList<XmlTag> = ArrayList()
+                var lastFoundSrcTag: XmlTag? = null
+                localClassPathFile.rootTag?.findSubTags(EclipseXml.CLASSPATHENTRY_TAG)?.let { lastFoundSrcTag = synchronizeChangeableSourceRoots(it, deletableEntries) }
 
-            PsiDocumentWriterHelper.executePsiWriteAction(project, psiClasspathFile) {
                 deletableEntries.forEach { it.delete() }
 
                 localChangeableSourceRoots.forEach {
-                    val classPathEntryTag = psiClasspathFile.rootTag?.createChildTag(EclipseXml.CLASSPATHENTRY_TAG, null, null, false)
+                    val classPathEntryTag = localClassPathFile.rootTag?.createChildTag(EclipseXml.CLASSPATHENTRY_TAG, null, null, false)
                     if (classPathEntryTag != null) {
                         classPathEntryTag.setAttribute(EclipseXml.KIND_ATTR, EclipseXml.SRC_KIND)
                         classPathEntryTag.setAttribute(EclipseXml.PATH_ATTR, it)
                         if (lastFoundSrcTag != null) {
-                            psiClasspathFile.rootTag?.addAfter(classPathEntryTag, lastFoundSrcTag)
+                            localClassPathFile.rootTag?.addAfter(classPathEntryTag, lastFoundSrcTag)
                         } else {
-                            psiClasspathFile.rootTag?.addSubTag(classPathEntryTag, true)
+                            localClassPathFile.rootTag?.addSubTag(classPathEntryTag, true)
                         }
                     }
                 }

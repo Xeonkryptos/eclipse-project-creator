@@ -20,23 +20,26 @@ class EclipseIvyUpdater private constructor() {
         fun updateClasspathFileWithIvyContainer(project: Project, module: Module, virtualClasspathFile: VirtualFile) {
             val psiClasspathFile: XmlFile = PsiManager.getInstance(project).findFile(virtualClasspathFile) as XmlFile
 
-            var notFound = true
-            psiClasspathFile.rootTag?.findSubTags(EclipseXml.CLASSPATHENTRY_TAG)?.let { classPathEntryTags ->
-                for (classPathEntryTag in classPathEntryTags) {
-                    val kindAttribute = classPathEntryTag.getAttributeValue(EclipseXml.KIND_ATTR)
-                    val pathAttribute = classPathEntryTag.getAttributeValue(EclipseXml.PATH_ATTR)
+            PsiDocumentWriterHelper.executePsiWriteAction(project, psiClasspathFile) {
+                var notFound = true
+                it.rootTag?.findSubTags(EclipseXml.CLASSPATHENTRY_TAG)?.let { classPathEntryTags ->
+                    for (classPathEntryTag in classPathEntryTags) {
+                        val kindAttribute = classPathEntryTag.getAttributeValue(EclipseXml.KIND_ATTR)
+                        val pathAttribute = classPathEntryTag.getAttributeValue(EclipseXml.PATH_ATTR)
 
-                    if (isKindOfTypeCon(kindAttribute) && isPathAttributeReferencingToIvy(pathAttribute)) {
-                        notFound = false
-                        break
+                        if (isKindOfTypeCon(kindAttribute) && isPathAttributeReferencingToIvy(pathAttribute)) {
+                            notFound = false
+                            break
+                        }
+                    }
+
+                    if (notFound) {
+                        val classPathEntryTag = it.rootTag?.createChildTag(EclipseXml.CLASSPATHENTRY_TAG, null, null, false)
+                        classPathEntryTag?.setAttribute(EclipseXml.KIND_ATTR, EclipseXml.CON_KIND)
+                        classPathEntryTag?.setAttribute(EclipseXml.PATH_ATTR, "${EclipseIvyCommons.IVYDE_CONTAINER_NAME}/?project=${module.name}\$amp;ivyXmlPath=ivy.xml\$amp;confs=*")
+                        it.rootTag?.addSubTag(classPathEntryTag, false)
                     }
                 }
-            }
-            if (notFound) {
-                val classPathEntryTag = psiClasspathFile.rootTag?.createChildTag(EclipseXml.CLASSPATHENTRY_TAG, null, null, false)
-                classPathEntryTag?.setAttribute(EclipseXml.KIND_ATTR, EclipseXml.CON_KIND)
-                classPathEntryTag?.setAttribute(EclipseXml.PATH_ATTR, "${EclipseIvyCommons.IVYDE_CONTAINER_NAME}/?project=${module.name}\$amp;ivyXmlPath=ivy.xml\$amp;confs=*")
-                PsiDocumentWriterHelper.executePsiWriteAction(project, psiClasspathFile) { psiClasspathFile.rootTag?.addSubTag(classPathEntryTag, false) }
             }
         }
 
@@ -51,11 +54,13 @@ class EclipseIvyUpdater private constructor() {
         @JvmStatic
         fun updateProjectFileWithIvyNature(project: Project, virtualProjectFile: VirtualFile) {
             val psiProjectFile = PsiManager.getInstance(project).findFile(virtualProjectFile) as XmlFile
-            val naturesTag = psiProjectFile.rootTag?.findFirstSubTag("natures")
-            val ivyNatureFound = naturesTag?.findSubTags("nature")?.any { natureTag -> natureTag.textMatches(EclipseIvyCommons.IVY_NATURE) }
-            if (ivyNatureFound == null || ivyNatureFound == false) {
-                val natureChildTag = naturesTag?.createChildTag("nature", null, EclipseIvyCommons.IVY_NATURE, false)
-                PsiDocumentWriterHelper.executePsiWriteAction(project, psiProjectFile) { naturesTag?.addSubTag(natureChildTag, false) }
+            PsiDocumentWriterHelper.executePsiWriteAction(project, psiProjectFile) {
+                val naturesTag = it.rootTag?.findFirstSubTag("natures")
+                val ivyNatureFound = naturesTag?.findSubTags("nature")?.any { natureTag -> natureTag.textMatches(EclipseIvyCommons.IVY_NATURE) }
+                if (ivyNatureFound == null || ivyNatureFound == false) {
+                    val natureChildTag = naturesTag?.createChildTag("nature", null, EclipseIvyCommons.IVY_NATURE, false)
+                    naturesTag?.addSubTag(natureChildTag, false)
+                }
             }
         }
     }

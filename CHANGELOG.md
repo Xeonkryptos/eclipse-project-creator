@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Fixed invalid change to PSI tree leading to thrown exception
+
 ## [0.0.6] - 2020-12-02
 
 ### Changed
