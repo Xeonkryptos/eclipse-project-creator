@@ -1,6 +1,6 @@
 package com.github.xeonkryptos.eclipseprojectcreator.ivy
 
-import com.github.xeonkryptos.eclipseprojectcreator.helper.PsiDocumentWriterHelper
+import com.github.xeonkryptos.eclipseprojectcreator.psi.PsiDocumentWriterHelper
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile

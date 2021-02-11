@@ -6,7 +6,8 @@
 
 ### Changed
 
-- Fixed invalid change to PSI tree leading to thrown exception
+- Fixed thrown exception when creating a new module with Eclipse and Ivy framework at the same time
+- Create .classpath and .project files with system-dependent line separators
 
 ## [0.0.6] - 2020-12-02
 

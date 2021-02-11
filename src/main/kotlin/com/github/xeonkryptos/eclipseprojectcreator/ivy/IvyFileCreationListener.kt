@@ -1,5 +1,6 @@
 package com.github.xeonkryptos.eclipseprojectcreator.ivy
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
@@ -67,9 +68,13 @@ class IvyFileCreationListener : BulkFileListener {
             return@map null
         }?.filter(Objects::nonNull)?.forEach { pair ->
             if (EclipseXml.PROJECT_FILE == pair?.second?.name && pair.second?.isInLocalFileSystem == true) {
-                EclipseIvyUpdater.updateProjectFileWithIvyNature(pair.first.first, pair.second!!)
+                ApplicationManager.getApplication().invokeLater {
+                    EclipseIvyUpdater.updateProjectFileWithIvyNature(pair.first.first, pair.second!!)
+                }
             } else if (pair?.second?.isInLocalFileSystem == true) {
-                EclipseIvyUpdater.updateClasspathFileWithIvyContainer(pair.first.first, pair.first.second!!, pair.second!!)
+                ApplicationManager.getApplication().invokeLater {
+                    EclipseIvyUpdater.updateClasspathFileWithIvyContainer(pair.first.first, pair.first.second!!, pair.second!!)
+                }
             }
         }
     }

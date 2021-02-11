@@ -45,12 +45,7 @@ class EclipseSupportConfigurable : FrameworkSupportInModuleConfigurable() {
         Files.newBufferedWriter(projectTargetFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE).use { writer ->
             this::class.java.getResource("/templates/.project")?.readText(StandardCharsets.UTF_8)?.let { fileContent ->
                 var finalizedProjectFileContent = FileTemplateUtil.mergeTemplate(templateAttributes, fileContent, true)
-                val osName = System.getProperty("os.name")
-                if (osName.contains("win")) {
-                    finalizedProjectFileContent = finalizedProjectFileContent.replace("\n", "\r\n")
-                } else if (osName.contains("mac")) {
-                    finalizedProjectFileContent = finalizedProjectFileContent.replace("\n", "\r")
-                }
+                finalizedProjectFileContent = finalizedProjectFileContent.replace("\n", System.lineSeparator())
                 writer.write(finalizedProjectFileContent)
             }
         }

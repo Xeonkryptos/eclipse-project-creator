@@ -1,4 +1,4 @@
-package com.github.xeonkryptos.eclipseprojectcreator.helper
+package com.github.xeonkryptos.eclipseprojectcreator.psi
 
 import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.command.WriteCommandAction

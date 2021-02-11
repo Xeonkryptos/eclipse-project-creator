@@ -1,6 +1,6 @@
 package com.github.xeonkryptos.eclipseprojectcreator.sync
 
-import com.github.xeonkryptos.eclipseprojectcreator.helper.PsiDocumentWriterHelper
+import com.github.xeonkryptos.eclipseprojectcreator.psi.PsiDocumentWriterHelper
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.components.ServiceManager
