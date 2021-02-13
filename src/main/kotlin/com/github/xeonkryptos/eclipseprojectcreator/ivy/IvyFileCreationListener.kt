@@ -12,8 +12,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.vfs.newvfs.BulkFileListener
 import com.intellij.openapi.vfs.newvfs.events.VFileCreateEvent
 import com.intellij.openapi.vfs.newvfs.events.VFileEvent
-import java.util.Objects
-import java.util.stream.Collectors
 import org.jetbrains.annotations.NotNull
 import org.jetbrains.idea.eclipse.EclipseXml
 
@@ -24,58 +22,57 @@ import org.jetbrains.idea.eclipse.EclipseXml
 class IvyFileCreationListener : BulkFileListener {
 
     private val projectManager = ProjectManager.getInstance()
+    private val applicationManager = ApplicationManager.getApplication()
 
-    private var fileIndices: List<Pair<Project, ProjectFileIndex>>? = null
-    private var eclipseFileCreationEvents: List<VFileCreateEvent>? = null
+    private var fileIndexContainers: List<FileIndexProjectContainer> = emptyList()
+    private var eclipseFileCreationEventContainers: List<VFileCreateEvent> = emptyList()
 
     @Override
     @SuppressWarnings("unchecked")
     override fun before(@NotNull events: List<VFileEvent>) {
         val openProjects = projectManager.openProjects
-        val fileIndices = ArrayList<Pair<Project, ProjectFileIndex>>(openProjects.size)
+        val fileIndices = ArrayList<FileIndexProjectContainer>(openProjects.size)
         for (i in openProjects.indices) {
             val openProject = openProjects[i]
             val projectRootManager = ProjectRootManager.getInstance(openProject)
-            fileIndices.add(Pair(openProject, projectRootManager.fileIndex))
+            fileIndices.add(FileIndexProjectContainer(openProject, projectRootManager.fileIndex))
         }
-        this.fileIndices = fileIndices
-        eclipseFileCreationEvents = events.stream()
-            .filter { it.isValid }
-            .filter { it is VFileCreateEvent }
-            .map { it as VFileCreateEvent }
-            .filter { !it.isDirectory }
-            .filter { EclipseXml.CLASSPATH_FILE == it.childName || EclipseXml.PROJECT_FILE == it.childName }
-            .collect(Collectors.toList())
+        this.fileIndexContainers = fileIndices
+        eclipseFileCreationEventContainers =
+            events.asSequence()
+                .filter { it.isValid && it is VFileCreateEvent }
+                .map { it as VFileCreateEvent }
+                .filter { !it.isDirectory && (EclipseXml.CLASSPATH_FILE == it.childName || EclipseXml.PROJECT_FILE == it.childName) }
+                .toList()
     }
 
     @Override
     override fun after(@NotNull events: List<VFileEvent>) {
-        eclipseFileCreationEvents?.stream()?.map { it.file }?.filter {
-            Objects.nonNull(it)
-        }?.map { virtualFile ->
-            for (pair in fileIndices!!) {
-                if (virtualFile != null && pair.second.isInContent(virtualFile)) {
-                    for (module in ModuleManager.getInstance(pair.first).modules) {
-                        val moduleRootManager = ModuleRootManager.getInstance(module)
-                        val moduleFileIndex = moduleRootManager.fileIndex
-                        if (moduleFileIndex.isInContent(virtualFile)) {
-                            return@map Pair<Pair<Project, Module?>, VirtualFile?>(Pair<Project, Module?>(pair.first, module), virtualFile)
-                        }
+        eclipseFileCreationEventContainers.asSequence().mapNotNull { it.file }.mapNotNull { virtualFile ->
+            return@mapNotNull fileIndexContainers.asSequence().filter { it.fileIndex.isInContent(virtualFile) }.map { fileIndexContainer ->
+                ModuleManager.getInstance(fileIndexContainer.project).modules.forEach { module ->
+                    val moduleRootManager = ModuleRootManager.getInstance(module)
+                    val moduleFileIndex = moduleRootManager.fileIndex
+                    if (moduleFileIndex.isInContent(virtualFile)) {
+                        return@map ModuleProjectFileContainer(fileIndexContainer.project, module, virtualFile)
                     }
-                    return@map Pair<Pair<Project, Module?>, VirtualFile?>(Pair<Project, Module?>(pair.first, null), virtualFile)
                 }
-            }
-            return@map null
-        }?.filter(Objects::nonNull)?.forEach { pair ->
-            if (EclipseXml.PROJECT_FILE == pair?.second?.name && pair.second?.isInLocalFileSystem == true) {
-                ApplicationManager.getApplication().invokeLater {
-                    EclipseIvyUpdater.updateProjectFileWithIvyNature(pair.first.first, pair.second!!)
+                return@map ModuleProjectFileContainer(fileIndexContainer.project, virtualFile = virtualFile)
+            }.firstOrNull()
+        }.forEach { moduleProjectFileContainer ->
+            if (EclipseXml.PROJECT_FILE == moduleProjectFileContainer.module?.name && moduleProjectFileContainer.virtualFile?.isInLocalFileSystem == true) {
+                applicationManager.invokeLater {
+                    EclipseIvyUpdater.updateProjectFileWithIvyNature(moduleProjectFileContainer.project, moduleProjectFileContainer.virtualFile)
                 }
-            } else if (pair?.second?.isInLocalFileSystem == true) {
-                ApplicationManager.getApplication().invokeLater {
-                    EclipseIvyUpdater.updateClasspathFileWithIvyContainer(pair.first.first, pair.first.second!!, pair.second!!)
+            } else if (moduleProjectFileContainer.virtualFile?.isInLocalFileSystem == true) {
+                applicationManager.invokeLater {
+                    EclipseIvyUpdater.updateClasspathFileWithIvyContainer(moduleProjectFileContainer.project, moduleProjectFileContainer.module!!, moduleProjectFileContainer.virtualFile)
                 }
             }
         }
     }
+
+    private data class FileIndexProjectContainer(val project: Project, val fileIndex: ProjectFileIndex)
+
+    private data class ModuleProjectFileContainer(val project: Project, val module: Module? = null, val virtualFile: VirtualFile?)
 }
