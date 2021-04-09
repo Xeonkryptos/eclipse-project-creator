@@ -7,9 +7,10 @@ import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.ModuleListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
-import java.nio.file.Files
-import java.nio.file.Paths
 import org.jetbrains.idea.eclipse.EclipseXml
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 
 /**
  * @author Xeonkryptos
@@ -18,7 +19,13 @@ import org.jetbrains.idea.eclipse.EclipseXml
 class EclipseModuleImportListener : ModuleListener {
 
     override fun moduleAdded(project: Project, module: Module) {
-        val moduleDirPath = Paths.get(ModuleUtil.getModuleDirPath(module))
+        val moduleDirPathAsString = ModuleUtil.getModuleDirPath(module)
+        var moduleDirPath: Path = Paths.get(moduleDirPathAsString)
+        if (Files.notExists(moduleDirPath)) {
+            val projectFile = project.projectFilePath ?: return
+            moduleDirPath = Paths.get(projectFile).parent
+        }
+
         val classpathFile = Files.list(moduleDirPath).use { fileStream ->
             fileStream.filter { it.fileName.toString() == EclipseXml.CLASSPATH_FILE }.findFirst().orElse(null)
         }

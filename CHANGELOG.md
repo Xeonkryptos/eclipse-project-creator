@@ -3,15 +3,10 @@
 # eclipse-project-creator Changelog
 
 ## [Unreleased]
-### Added
-
-### Changed
-
-### Deprecated
-
-### Removed
 
 ### Fixed
+
+- Fixed NullPointerException when working with a project without any modules
 
 ### Security
 ## [0.0.7]
