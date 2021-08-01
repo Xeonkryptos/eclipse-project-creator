@@ -3,6 +3,11 @@
 # eclipse-project-creator Changelog
 
 ## [Unreleased]
+
+### Changed
+
+- Made compatible to the newest IntelliJ IDE platform version
+
 ## [0.0.8]
 
 ### Fixed

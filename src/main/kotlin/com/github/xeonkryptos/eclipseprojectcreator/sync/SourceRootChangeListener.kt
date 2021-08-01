@@ -3,7 +3,8 @@ package com.github.xeonkryptos.eclipseprojectcreator.sync
 import com.github.xeonkryptos.eclipseprojectcreator.psi.PsiDocumentWriterHelper
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.ReadAction
-import com.intellij.openapi.components.ServiceManager
+import com.intellij.openapi.components.ComponentManager
+import com.intellij.openapi.components.service
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.module.ModuleUtil
@@ -42,7 +43,7 @@ class SourceRootChangeListener : ModuleRootListener {
     private val eclipseModules: MutableMap<Module, ChangeableSourceRoots> = ConcurrentHashMap()
 
     override fun rootsChanged(event: ModuleRootEvent) {
-        val projectCreatorService = ServiceManager.getService(event.project, DisposableSyncService::class.java)
+        val projectCreatorService = event.project.service<ComponentManager>().getService(DisposableSyncService::class.java)
         ReadAction.nonBlocking(Callable { findChangedModuleSourceRoots(event.project) })
             .coalesceBy(event.project, UNIQUE_ID)
             .expireWith(projectCreatorService)
