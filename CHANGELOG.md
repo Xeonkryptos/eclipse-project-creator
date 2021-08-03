@@ -3,6 +3,11 @@
 # eclipse-project-creator Changelog
 
 ## [Unreleased]
+
+### Fixed
+
+- Fixed NullPointerException
+
 ## [0.0.9]
 
 ### Changed
