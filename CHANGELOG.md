@@ -3,12 +3,16 @@
 # eclipse-project-creator Changelog
 
 ## [Unreleased]
+
+### Fixed
+
+- Fixed .project enrichment with ivy nature
+
 ## [0.0.10]
 
 ### Fixed
 
 - Fixed NullPointerException
-- Fixed .project enrichment with ivy nature
 
 ## [0.0.9]
 
