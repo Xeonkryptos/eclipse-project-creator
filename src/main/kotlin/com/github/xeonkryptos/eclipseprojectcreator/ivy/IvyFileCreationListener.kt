@@ -38,36 +38,42 @@ class IvyFileCreationListener : BulkFileListener {
             fileIndices.add(FileIndexProjectContainer(openProject, projectRootManager.fileIndex))
         }
         this.fileIndexContainers = fileIndices
-        eclipseFileCreationEventContainers =
-            events.asSequence()
-                .filter { it.isValid && it is VFileCreateEvent }
-                .map { it as VFileCreateEvent }
-                .filter { !it.isDirectory && (EclipseXml.CLASSPATH_FILE == it.childName || EclipseXml.PROJECT_FILE == it.childName) }
-                .toList()
+        eclipseFileCreationEventContainers = events.asSequence()
+            .filter { it.isValid && it is VFileCreateEvent }
+            .map { it as VFileCreateEvent }
+            .filter { !it.isDirectory && (EclipseXml.CLASSPATH_FILE == it.childName || EclipseXml.PROJECT_FILE == it.childName) }
+            .toList()
     }
 
     @Override
     override fun after(@NotNull events: List<VFileEvent>) {
         eclipseFileCreationEventContainers.asSequence().mapNotNull { it.file }.mapNotNull { virtualFile ->
-            return@mapNotNull fileIndexContainers.asSequence().filter { it.fileIndex.isInContent(virtualFile) }.map { fileIndexContainer ->
-                ModuleManager.getInstance(fileIndexContainer.project).modules.forEach { module ->
-                    val moduleRootManager = ModuleRootManager.getInstance(module)
-                    val moduleFileIndex = moduleRootManager.fileIndex
-                    if (moduleFileIndex.isInContent(virtualFile)) {
-                        return@map ModuleProjectFileContainer(fileIndexContainer.project, module, virtualFile)
-                    }
-                }
-                return@map ModuleProjectFileContainer(fileIndexContainer.project, virtualFile = virtualFile)
-            }.firstOrNull()
-        }.forEach { moduleProjectFileContainer ->
-            if (EclipseXml.PROJECT_FILE == moduleProjectFileContainer.module?.name && moduleProjectFileContainer.virtualFile?.isInLocalFileSystem == true) {
-                applicationManager.invokeLater {
-                    EclipseIvyUpdater.updateProjectFileWithIvyNature(moduleProjectFileContainer.project, moduleProjectFileContainer.virtualFile)
-                }
-            } else if (moduleProjectFileContainer.virtualFile?.isInLocalFileSystem == true) {
-                applicationManager.invokeLater {
-                    EclipseIvyUpdater.updateClasspathFileWithIvyContainer(moduleProjectFileContainer.project, moduleProjectFileContainer.module!!, moduleProjectFileContainer.virtualFile)
-                }
+            return@mapNotNull fileIndexContainers.asSequence()
+                .filter { it.fileIndex.isInContent(virtualFile) }
+                .map { fileIndexContainer -> createModuleProjectFileContainerForFile(fileIndexContainer, virtualFile) }
+                .firstOrNull()
+        }.filter { it.virtualFile?.isInLocalFileSystem == true }.forEach { enrichEclipseFiles(it) }
+    }
+
+    private fun createModuleProjectFileContainerForFile(fileIndexContainer: FileIndexProjectContainer, virtualFile: VirtualFile): ModuleProjectFileContainer {
+        ModuleManager.getInstance(fileIndexContainer.project).modules.forEach { module ->
+            val moduleRootManager = ModuleRootManager.getInstance(module)
+            val moduleFileIndex = moduleRootManager.fileIndex
+            if (moduleFileIndex.isInContent(virtualFile)) {
+                return ModuleProjectFileContainer(fileIndexContainer.project, module, virtualFile)
+            }
+        }
+        return ModuleProjectFileContainer(fileIndexContainer.project, virtualFile = virtualFile)
+    }
+
+    private fun enrichEclipseFiles(moduleProjectFileContainer: ModuleProjectFileContainer) {
+        if (EclipseXml.PROJECT_FILE == moduleProjectFileContainer.virtualFile?.name) {
+            applicationManager.invokeLater {
+                EclipseIvyUpdater.updateProjectFileWithIvyNature(moduleProjectFileContainer.project, moduleProjectFileContainer.virtualFile)
+            }
+        } else if (moduleProjectFileContainer.module != null && moduleProjectFileContainer.virtualFile != null) {
+            applicationManager.invokeLater {
+                EclipseIvyUpdater.updateClasspathFileWithIvyContainer(moduleProjectFileContainer.project, moduleProjectFileContainer.module, moduleProjectFileContainer.virtualFile)
             }
         }
     }
