@@ -7,6 +7,7 @@
 ### Fixed
 
 - Fixed NullPointerException
+- Fixed .project enrichment with ivy nature
 
 ## [0.0.9]
 
