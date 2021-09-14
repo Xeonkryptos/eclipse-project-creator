@@ -3,6 +3,11 @@
 # eclipse-project-creator Changelog
 
 ## [Unreleased]
+
+### Fixed
+
+- Fixed ivy container classpath url added into .classpath
+
 ## [0.0.11]
 
 ### Fixed

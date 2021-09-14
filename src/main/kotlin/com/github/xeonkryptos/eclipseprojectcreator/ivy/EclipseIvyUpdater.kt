@@ -36,7 +36,7 @@ class EclipseIvyUpdater private constructor() {
                     if (notFound) {
                         val classPathEntryTag = it.rootTag?.createChildTag(EclipseXml.CLASSPATHENTRY_TAG, null, null, false)
                         classPathEntryTag?.setAttribute(EclipseXml.KIND_ATTR, EclipseXml.CON_KIND)
-                        classPathEntryTag?.setAttribute(EclipseXml.PATH_ATTR, "${EclipseIvyCommons.IVYDE_CONTAINER_NAME}/?project=${module.name}\$amp;ivyXmlPath=ivy.xml\$amp;confs=*")
+                        classPathEntryTag?.setAttribute(EclipseXml.PATH_ATTR, "${EclipseIvyCommons.IVYDE_CONTAINER_NAME}/?project=${module.name}&amp;ivyXmlPath=ivy.xml&amp;confs=*")
                         it.rootTag?.addSubTag(classPathEntryTag, false)
                     }
                 }
