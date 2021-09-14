@@ -3,6 +3,7 @@
 # eclipse-project-creator Changelog
 
 ## [Unreleased]
+## [0.0.12]
 
 ### Fixed
 
