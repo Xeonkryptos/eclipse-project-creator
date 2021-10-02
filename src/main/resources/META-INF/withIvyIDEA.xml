@@ -4,8 +4,4 @@
     <applicationListeners>
         <listener class="com.github.xeonkryptos.eclipseprojectcreator.ivy.IvyFileCreationListener" topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
     </applicationListeners>
-
-    <projectListeners>
-        <listener class="com.github.xeonkryptos.eclipseprojectcreator.import.EclipseModuleImportListener" topic="com.intellij.openapi.project.ModuleListener"/>
-    </projectListeners>
 </idea-plugin>

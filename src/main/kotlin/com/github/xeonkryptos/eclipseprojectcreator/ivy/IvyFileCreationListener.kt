@@ -1,6 +1,5 @@
 package com.github.xeonkryptos.eclipseprojectcreator.ivy
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.Project
@@ -22,7 +21,6 @@ import org.jetbrains.idea.eclipse.EclipseXml
 class IvyFileCreationListener : BulkFileListener {
 
     private val projectManager = ProjectManager.getInstance()
-    private val applicationManager = ApplicationManager.getApplication()
 
     private var fileIndexContainers: List<FileIndexProjectContainer> = emptyList()
     private var eclipseFileCreationEventContainers: List<VFileCreateEvent> = emptyList()
@@ -68,13 +66,9 @@ class IvyFileCreationListener : BulkFileListener {
 
     private fun enrichEclipseFiles(moduleProjectFileContainer: ModuleProjectFileContainer) {
         if (EclipseXml.PROJECT_FILE == moduleProjectFileContainer.virtualFile?.name) {
-            applicationManager.invokeLater {
-                EclipseIvyUpdater.updateProjectFileWithIvyNature(moduleProjectFileContainer.project, moduleProjectFileContainer.virtualFile)
-            }
+            EclipseIvyUpdater.updateProjectFileWithIvyNature(moduleProjectFileContainer.project, moduleProjectFileContainer.virtualFile)
         } else if (moduleProjectFileContainer.module != null && moduleProjectFileContainer.virtualFile != null) {
-            applicationManager.invokeLater {
-                EclipseIvyUpdater.updateClasspathFileWithIvyContainer(moduleProjectFileContainer.project, moduleProjectFileContainer.module, moduleProjectFileContainer.virtualFile)
-            }
+            EclipseIvyUpdater.updateClasspathFileWithIvyContainer(moduleProjectFileContainer.module, moduleProjectFileContainer.virtualFile)
         }
     }
 

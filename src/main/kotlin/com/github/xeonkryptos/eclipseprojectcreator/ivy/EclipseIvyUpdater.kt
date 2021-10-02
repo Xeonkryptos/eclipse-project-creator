@@ -1,12 +1,14 @@
 package com.github.xeonkryptos.eclipseprojectcreator.ivy
 
-import com.github.xeonkryptos.eclipseprojectcreator.psi.PsiDocumentWriterHelper
+import com.github.xeonkryptos.eclipseprojectcreator.util.EclipseUtil
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.JDOMUtil
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiManager
-import com.intellij.psi.xml.XmlFile
+import org.jdom.Element
+import org.jdom.output.EclipseJDOMUtil
 import org.jetbrains.idea.eclipse.EclipseXml
+import org.jetbrains.idea.eclipse.conversion.EclipseClasspathWriter
 
 /**
  * @author Xeonkryptos
@@ -17,51 +19,46 @@ class EclipseIvyUpdater private constructor() {
     companion object {
 
         @JvmStatic
-        fun updateClasspathFileWithIvyContainer(project: Project, module: Module, virtualClasspathFile: VirtualFile) {
-            val psiClasspathFile: XmlFile = PsiManager.getInstance(project).findFile(virtualClasspathFile) as XmlFile
+        fun updateClasspathFileWithIvyContainer(module: Module, virtualClasspathFile: VirtualFile? = null, providedClasspathElement: Element? = null) {
+            val classpathElement = providedClasspathElement ?: JDOMUtil.load(virtualClasspathFile!!.toNioPath())
 
-            PsiDocumentWriterHelper.executePsiWriteAction(project, psiClasspathFile) {
-                var notFound = true
-                it.rootTag?.findSubTags(EclipseXml.CLASSPATHENTRY_TAG)?.let { classPathEntryTags ->
-                    for (classPathEntryTag in classPathEntryTags) {
-                        val kindAttribute = classPathEntryTag.getAttributeValue(EclipseXml.KIND_ATTR)
-                        val pathAttribute = classPathEntryTag.getAttributeValue(EclipseXml.PATH_ATTR)
+            val ivyDeContainerPath = EclipseIvyCommons.computeIvyDeContainerPath(module)
 
-                        if (isKindOfTypeCon(kindAttribute) && isPathAttributeReferencingToIvy(pathAttribute)) {
-                            notFound = false
-                            break
-                        }
-                    }
-
-                    if (notFound) {
-                        val classPathEntryTag = it.rootTag?.createChildTag(EclipseXml.CLASSPATHENTRY_TAG, null, null, false)
-                        classPathEntryTag?.setAttribute(EclipseXml.KIND_ATTR, EclipseXml.CON_KIND)
-                        classPathEntryTag?.setAttribute(EclipseXml.PATH_ATTR, "${EclipseIvyCommons.IVYDE_CONTAINER_NAME}/?project=${module.name}&amp;ivyXmlPath=ivy.xml&amp;confs=*")
-                        it.rootTag?.addSubTag(classPathEntryTag, false)
-                    }
+            var foundIvyDeContainer = false
+            for (classpathEntryElement in classpathElement.getChildren(EclipseXml.CLASSPATHENTRY_TAG)) {
+                val pathAttributeValue = classpathEntryElement.getAttributeValue(EclipseXml.PATH_ATTR)
+                if (pathAttributeValue.startsWith(EclipseIvyCommons.IVYDE_CONTAINER_NAME)) {
+                    classpathEntryElement.setAttribute(EclipseXml.PATH_ATTR, ivyDeContainerPath)
+                    foundIvyDeContainer = true
+                    break
                 }
             }
-        }
 
-        private fun isKindOfTypeCon(kindAttribute: String?): Boolean {
-            return kindAttribute != null && kindAttribute == "con"
-        }
+            if (!foundIvyDeContainer) {
+                EclipseClasspathWriter.addOrderEntry(EclipseXml.CON_KIND, ivyDeContainerPath, classpathElement, mapOf())
+            }
 
-        private fun isPathAttributeReferencingToIvy(pathAttribute: String?): Boolean {
-            return pathAttribute != null && pathAttribute.startsWith(EclipseIvyCommons.IVYDE_CONTAINER_NAME)
+            if (virtualClasspathFile != null) {
+                EclipseJDOMUtil.output(classpathElement, virtualClasspathFile.toNioPath().toFile(), module.project)
+                EclipseUtil.refreshAfterJDOMWrite(virtualClasspathFile.path)
+            }
         }
 
         @JvmStatic
         fun updateProjectFileWithIvyNature(project: Project, virtualProjectFile: VirtualFile) {
-            val psiProjectFile = PsiManager.getInstance(project).findFile(virtualProjectFile) as XmlFile
-            PsiDocumentWriterHelper.executePsiWriteAction(project, psiProjectFile) {
-                val naturesTag = it.rootTag?.findFirstSubTag("natures")
-                val ivyNatureFound = naturesTag?.findSubTags("nature")?.any { natureTag -> natureTag.textMatches(EclipseIvyCommons.IVY_NATURE) }
-                if (ivyNatureFound == null || ivyNatureFound == false) {
-                    val natureChildTag = naturesTag?.createChildTag("nature", null, EclipseIvyCommons.IVY_NATURE, false)
-                    naturesTag?.addSubTag(natureChildTag, false)
-                }
+            val element = JDOMUtil.load(virtualProjectFile.toNioPath())
+
+            val naturesElement = element.getChild("natures")
+            for (natureElement in naturesElement.getChildren("nature")) {
+                if (natureElement.value == EclipseIvyCommons.IVY_NATURE) return
             }
+
+            val natureElement = Element("nature")
+            natureElement.text = EclipseIvyCommons.IVY_NATURE
+            naturesElement.addContent(natureElement)
+
+            EclipseJDOMUtil.output(element, virtualProjectFile.toNioPath().toFile(), project)
+            EclipseUtil.refreshAfterJDOMWrite(virtualProjectFile.path)
         }
     }
 }

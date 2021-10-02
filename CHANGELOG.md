@@ -3,6 +3,16 @@
 # eclipse-project-creator Changelog
 
 ## [Unreleased]
+
+### Added
+
+- On project rename, update project name in .project and the IvyDE container entry within .classpath (only with the
+  modified IvyIDEA plugin)
+
+### Changed
+
+- Update mechanism of .project and .classpath files (not using PSI anymore)
+
 ## [0.0.12]
 
 ### Fixed
