@@ -2,6 +2,7 @@ package com.github.xeonkryptos.eclipseprojectcreator.util
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.module.ModuleGrouper
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.impl.storage.ClasspathStorage
 import com.intellij.openapi.util.io.FileUtil
@@ -24,9 +25,9 @@ class EclipseUtil {
             }
         }
 
+        @Suppress("UnstableApiUsage")
         fun getCleanedModuleName(module: Module): String {
-            val startOfModuleName = module.name.lastIndexOf('.')
-            return if (startOfModuleName != -1) module.name.substring(startOfModuleName + 1) else module.name
+            return ModuleGrouper.instanceFor(module.project).getShortenedName(module)
         }
     }
 }
