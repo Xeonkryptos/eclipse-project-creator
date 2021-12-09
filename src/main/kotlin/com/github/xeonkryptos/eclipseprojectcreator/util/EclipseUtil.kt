@@ -25,9 +25,9 @@ class EclipseUtil {
             }
         }
 
-        @Suppress("UnstableApiUsage")
         fun getCleanedModuleName(module: Module): String {
-            return ModuleGrouper.instanceFor(module.project).getShortenedName(module)
+            val startOfModuleName = module.name.lastIndexOf('.')
+            return if (startOfModuleName != -1) module.name.substring(startOfModuleName + 1) else module.name
         }
     }
 }
